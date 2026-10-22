@@ -82,6 +82,10 @@ h1{margin:0;font:400 clamp(2rem,6vw,3.2rem)/1.05 var(--display);letter-spacing:.
 .btn:focus-visible{outline:2px solid var(--pumpkin);outline-offset:2px}
 .btn[aria-pressed="true"]{color:var(--pumpkin);border-color:var(--pumpkin)}
 .hint{flex-basis:100%;margin:0;font-family:var(--text);font-style:italic;font-size:1rem;color:var(--dim)}
+.again{position:fixed;z-index:20;right:max(16px,calc(env(safe-area-inset-right,0px) + 16px));bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
+  font-size:1rem;color:#1a0b00;background:var(--pumpkin);border-color:var(--pumpkin);padding:.6rem 1.1rem;box-shadow:0 0 18px rgba(255,122,26,.45)}
+.again:hover{color:#1a0b00;background:#ff9340}
+.again.on{animation:rise .6s ease}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 @media (prefers-reduced-motion:reduce){
@@ -341,8 +345,8 @@ h1{margin:0;font:400 clamp(2rem,6vw,3.2rem)/1.05 var(--display);letter-spacing:.
   <div class="ctl">
     <button class="btn" id="music" type="button" aria-pressed="false">Spooky music: off</button>
   </div>
-  <p class="hint" id="hint">Move the light over the board and flip two tiles at a time.</p>
 </footer>
+<button class="btn again" id="again" type="button" hidden>Play again</button>
 <p class="sr" id="live" role="status" aria-live="polite"></p>
 
 <script>
@@ -370,7 +374,7 @@ let MOTIFS=LEVELS[0];
 
 const $=s=>document.querySelector(s);
 const root=document.documentElement;
-const board=$('#board'),cover=$('#cover'),reveal=$('#reveal'),hint=$('#hint'),live=$('#live');
+const board=$('#board'),cover=$('#cover'),reveal=$('#reveal'),live=$('#live');
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------- sound (all synthesized, starts only from the button) ---------- */
@@ -558,7 +562,7 @@ function flip(i){
   const c=cards[i];
   if(c.up||c.done)return;
   Sound.unlock();
-  c.up=true;paint(i);Sound.sfx('flip');hint.hidden=true;
+  c.up=true;paint(i);Sound.sfx('flip');
   if(first===null){first=i;return;}
   const a=first;first=null;moves++;busy=true;update();
   if(cards[a].id===c.id){
@@ -683,22 +687,25 @@ function win(){
   if(!reduce)throwCandy(3600);
   setTimeout(function(){
     reveal.hidden=false;reveal.classList.add('on');
+    const ag=$('#again');ag.hidden=false;ag.classList.add('on');
     say('The cover is lifted. The final coordinates are shown below the board.');
     reveal.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'});
   },reduce?400:3600);
 }
 
 function reset(){
+  $('#again').hidden=true;$('#again').classList.remove('on');board.classList.remove('glow','fade');
   lv=0;won=false;first=null;busy=false;moves=0;found=0;lifting=null;moved=false;
   reveal.hidden=true;reveal.classList.remove('on');
   $('#cN').textContent='';$('#cW').textContent='';
   root.classList.add('playing');
-  cover.hidden=false;cover.style.opacity='1';hint.hidden=false;
+  cover.hidden=false;cover.style.opacity='1';
   scrollTo(0,0);
   build();measure();centerOnBoard(true);update();startLoop();
 }
 
 /* ---------- wiring ---------- */
+$('#again').addEventListener('click',reset);
 const musicBtn=$('#music');
 musicBtn.addEventListener('click',function(){
   const on=Sound.toggle();
@@ -714,6 +721,5 @@ root.classList.add('playing');
 build();measure();centerOnBoard(true);update();startLoop();
 })();
 </script>
-
 
 </body></html>
