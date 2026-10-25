@@ -85,6 +85,14 @@ h1{margin:0;font:400 clamp(2rem,6vw,3.2rem)/1.05 var(--display);letter-spacing:.
 .again{position:fixed;z-index:20;right:max(16px,calc(env(safe-area-inset-right,0px) + 16px));bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
   font-size:1rem;color:#1a0b00;background:var(--pumpkin);border-color:var(--pumpkin);padding:.6rem 1.1rem;box-shadow:0 0 18px rgba(255,122,26,.45)}
 .again:hover{color:#1a0b00;background:#ff9340}
+/* hidden admin door: tap the title three times */
+.admin{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(11,6,18,.86);padding:0 16px}
+.acard{width:min(100%,320px);background:#170d24;border:1px solid var(--edge);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;color:var(--bone);font-family:var(--text)}
+.acard label{font-family:var(--display);font-size:1.3rem}
+.acard input{font:inherit;font-size:18px;padding:8px 10px;border-radius:8px;border:1px solid var(--edge);background:var(--night);color:var(--bone)}
+.arow{display:flex;gap:8px;justify-content:flex-end}
+.arow button{font:inherit;font-size:16px;min-height:44px;padding:6px 16px;border-radius:999px;border:1px solid var(--violet);background:transparent;color:var(--bone);cursor:pointer}
+.acard p{margin:0;min-height:1.2em;font-size:15px;color:#ff9a8a;font-style:italic}
 .again.on{animation:rise .6s ease}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
@@ -346,7 +354,13 @@ h1{margin:0;font:400 clamp(2rem,6vw,3.2rem)/1.05 var(--display);letter-spacing:.
     <button class="btn" id="music" type="button" aria-pressed="false">Spooky music: off</button>
   </div>
 </footer>
-<button class="btn again" id="again" type="button" hidden>Play again</button>
+<button class="btn again" id="again" type="button" hidden>↺ Replay</button>
+<div class="admin" id="admin" hidden><div class="acard" role="dialog" aria-modal="true" aria-labelledby="apwl">
+  <label id="apwl" for="apw">Password</label>
+  <input id="apw" type="password" autocomplete="off">
+  <p id="aerr" role="status"></p>
+  <div class="arow"><button id="acancel" type="button">Cancel</button><button id="aok" type="button">Open</button></div>
+</div></div>
 <p class="sr" id="live" role="status" aria-live="polite"></p>
 
 <script>
@@ -703,6 +717,23 @@ function reset(){
   scrollTo(0,0);
   build();measure();centerOnBoard(true);update();startLoop();
 }
+
+/* ---------- admin door: three quick taps on the title ask for the password; the right one jumps to the finish ---------- */
+const ADMIN=217580182;let titleTaps=[];
+function adminHash(t){let h=2166136261;t="jar-admin|"+t;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h>>>0;}
+document.addEventListener('pointerdown',function(e){if(!$('#admin').hidden)return;const r=document.querySelector('h1').getBoundingClientRect();
+  if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
+  const now=performance.now();titleTaps=titleTaps.filter(function(t){return now-t<1500;});titleTaps.push(now);
+  if(titleTaps.length>=3){titleTaps=[];$('#aerr').textContent='';$('#apw').value='';$('#admin').hidden=false;setTimeout(function(){$('#apw').focus();},0);}},true);
+function adminTry(){Sound.unlock();if(adminHash($('#apw').value)!==ADMIN){$('#aerr').textContent="That's not it.";$('#apw').select();return;}
+  $('#admin').hidden=true;
+  $('#again').hidden=true;$('#again').classList.remove('on');board.classList.remove('glow','fade');reveal.hidden=true;reveal.classList.remove('on');
+  lv=LEVELS.length-1;won=false;first=null;busy=false;lifting=null;root.classList.add('playing');cover.hidden=false;cover.style.opacity='1';
+  build();measure();centerOnBoard(true);startLoop();
+  cards.forEach(function(c,i){c.done=true;paint(i);});found=MOTIFS.length;
+  setTimeout(win,500);}
+$('#aok').addEventListener('click',adminTry);$('#acancel').addEventListener('click',function(){$('#admin').hidden=true;});
+$('#apw').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();adminTry();}else if(e.key==='Escape')$('#admin').hidden=true;});
 
 /* ---------- wiring ---------- */
 $('#again').addEventListener('click',reset);
